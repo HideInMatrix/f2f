@@ -2,7 +2,7 @@
 
 <template>
   <div class="">
-    <div>版本: 0.0.1</div>
+    <div class="flex items-center justify-center">版本: 0.0.1</div>
     <slot></slot>
   </div>
 </template>

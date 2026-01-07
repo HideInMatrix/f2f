@@ -7,7 +7,7 @@
 
       <div class="flex gap-2">
         <input v-model="newRoom" placeholder="房间名" class="border p-2 flex-1 rounded" />
-        <button class="bg-blue-500 text-white px-4 rounded" @click="handleCreate">创建并加入</button>
+        <button class="bg-blue-500 text-white px-4 rounded" @click="handleCreate">创建</button>
       </div>
 
       <h2 class="font-semibold">已有房间</h2>

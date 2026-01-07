@@ -13,7 +13,7 @@ export function useChat(room: string, name: string) {
 
     const isChannelOpen = ref(false)
     const connectionState = ref<
-        'idle' | 'connecting' | 'connected' | 'failed'
+        'idle' | 'connecting' | 'connected' | 'failed' | 'checking'
     >('idle')
 
     /* ========================

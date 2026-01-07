@@ -9,6 +9,7 @@ type ClientMessage =
     | { type: 'create-room'; room: string; owner: string }
     | { type: 'join-room'; room: string; name: string }
     | { type: 'signal'; room: string; data: any }
+    | { type: 'leave-room'; room: string; data: any }
 
 type ServerMessage =
     | {

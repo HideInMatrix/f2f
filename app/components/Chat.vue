@@ -22,7 +22,9 @@
     <!-- 输入区域 -->
     <div class="mt-3 flex gap-2">
       <input v-model="input" class="flex-1 border rounded p-2" placeholder="输入消息" @keydown.enter="sendMsg" />
-      <button class="px-4 py-2 rounded bg-blue-500 text-white disabled:opacity-50" :disabled="!canSend" @click="sendMsg">发送</button>
+      <button class="px-4 py-2 rounded bg-blue-500 text-white disabled:opacity-50" :disabled="!canSend" @click="sendMsg">
+        {{ connectionState === "checking" ? "检查中" : connectionState === "connecting" ? "连接中" : connectionState === "connected" ? "发送" : "连接失败" }}
+      </button>
     </div>
   </div>
 </template>
@@ -68,8 +70,7 @@ const { send, onMessage } = useWsClient();
 onMessage(async (data) => {
   if (data.type === "rooms" && isOwner.value) {
     const newRoomInfo = data.rooms.find((r: any) => r.room === roomId);
-    console.log(newRoomInfo);
-    if (newRoomInfo.users.length > 1) {
+    if (newRoomInfo.users && newRoomInfo.users.length > 1) {
       start();
     }
   }
@@ -89,6 +90,14 @@ onMounted(() => {
   // 通知服务器加入房间（信令）
   send({
     type: "join-room",
+    room: roomId,
+    name: userName.value,
+  });
+});
+
+onBeforeRouteLeave((leaveGuard) => {
+  send({
+    type: "leave-room",
     room: roomId,
     name: userName.value,
   });

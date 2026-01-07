@@ -103,6 +103,24 @@ export default defineWebSocketHandler({
             return
         }
 
+        /* ====== 离开房间 ========*/
+        if (data.type === "leave-room") {
+            if (!ctx.room) return
+
+            const roomName = ctx.room
+            const room = rooms.get(roomName)
+
+            room?.peers.delete(peer)
+            ctx.room = undefined
+
+            if (room && room.peers.size === 0) {
+                rooms.delete(roomName)
+            }
+
+            broadcastRooms()
+            return
+        }
+
         /* ===== WebRTC 信令 ===== */
         if (data.type === 'signal') {
             const room = rooms.get(data.room)
