@@ -3,7 +3,7 @@ const peers = new Set<any>()
 const rooms = new Map<
     string,
     {
-        owner: string
+        owner: User
         peers: Set<any>
     }
 >()
@@ -26,7 +26,8 @@ function sendRoomsToPeer(peer: any, type: WSMessageType = "rooms") {
             // 只有加入了该房间，才能看到用户列表
             if (ctx.room === roomName) {
                 base.users = Array.from(room.peers).map((p: any) => ({
-                    name: (p.context as PeerContext)?.name || 'unknown'
+                    userId: 'unknown',
+                    name: (p.context as PeerContext)?.user?.name || 'unknown'
                 }))
             }
 
@@ -96,7 +97,7 @@ export default defineWebSocketHandler({
             }
 
             ctx.room = data.room
-            ctx.name = data.name
+            ctx.user = data.user
             room.peers.add(peer)
 
             broadcastRooms()
@@ -111,11 +112,11 @@ export default defineWebSocketHandler({
             const room = rooms.get(roomName)
 
             room?.peers.delete(peer)
-            ctx.room = undefined
+            // ctx.room = undefined
 
-            if (room && room.peers.size === 0) {
-                rooms.delete(roomName)
-            }
+            // if (room && room.peers.size === 0) {
+            //     rooms.delete(roomName)
+            // }
 
             broadcastRooms()
             return

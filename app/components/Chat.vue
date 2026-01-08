@@ -31,18 +31,20 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, watch, nextTick } from "vue";
-import { useRoute, useState } from "#imports";
+import { useRoute } from "#imports";
 import { useWsClient } from "~/composables/useWsClient";
 import { useRoomList } from "~/composables/useRoomList";
 import { useChat } from "~/composables/useChat";
+import { useUserStore } from "#imports";
 
 /* ========================
    基础信息
 ======================== */
 
 const route = useRoute();
+const userStore = useUserStore();
+const { user } = storeToRefs(userStore);
 const roomId = route.params.id as string;
-const userName = useState<string>("userName");
 
 const input = ref("");
 
@@ -55,7 +57,9 @@ const { rooms } = useRoomList();
 const roomInfo = computed(() => rooms.value.find((r) => r.room === roomId));
 
 const isOwner = computed(() => {
-  return roomInfo.value?.owner === userName.value;
+  console.log("房间信息", roomInfo.value);
+
+  return roomInfo.value?.owner.userId === user.value.userId;
 });
 
 /* ========================
@@ -68,6 +72,8 @@ const { send, onMessage } = useWsClient();
   在监听到用户加入房间的时候发送自己的ICE信息
 =====================*/
 onMessage(async (data) => {
+  console.log("信令", data);
+
   if (data.type === "rooms" && isOwner.value) {
     const newRoomInfo = data.rooms.find((r: any) => r.room === roomId);
     if (newRoomInfo.users && newRoomInfo.users.length > 1) {
@@ -80,7 +86,7 @@ onMessage(async (data) => {
    WebRTC Chat
 ======================== */
 
-const { messages, start, sendMessage, connectionState } = useChat(roomId, userName.value);
+const { messages, start, sendMessage, connectionState } = useChat(roomId, user.value);
 
 /* ========================
    生命周期
@@ -88,18 +94,21 @@ const { messages, start, sendMessage, connectionState } = useChat(roomId, userNa
 
 onMounted(() => {
   // 通知服务器加入房间（信令）
+  console.log("我加入了房间");
+
   send({
     type: "join-room",
     room: roomId,
-    name: userName.value,
+    user: user.value,
   });
 });
 
+// 通知服务器离开房间 (信令)
 onBeforeRouteLeave((leaveGuard) => {
   send({
     type: "leave-room",
     room: roomId,
-    name: userName.value,
+    user: user.value,
   });
 });
 

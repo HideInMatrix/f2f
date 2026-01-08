@@ -3,7 +3,7 @@ import { useWsClient } from './useWsClient'
 
 export function useRoomList() {
     const rooms = ref<
-        { room: string; count: number; owner: string }[]
+        ClientRoomInfo[]
     >([])
 
     const { send, onMessage } = useWsClient()
@@ -18,7 +18,7 @@ export function useRoomList() {
         send({ type: 'list' })
     })
 
-    function createRoom(room: string, owner: string) {
+    function createRoom(room: string, owner: User) {
         send({
             type: 'create-room',
             room,

@@ -1,12 +1,12 @@
 import { ref, shallowRef } from 'vue'
 import { useWsClient } from './useWsClient'
 
-export function useChat(room: string, name: string) {
+export function useChat(room: string, user: User) {
     /* ========================
        状态
     ======================== */
 
-    const messages = ref<{ name: string; message: string }[]>([])
+    const messages = ref<{ userId: String; name: string; message: string }[]>([])
 
     const localStream = shallowRef<MediaStream | null>(null)
     const remoteStream = shallowRef<MediaStream | null>(null)
@@ -188,7 +188,7 @@ export function useChat(room: string, name: string) {
     function sendMessage(text: string) {
         if (!channel || channel.readyState !== 'open') return
 
-        const payload = { name, message: text }
+        const payload = { userId: user.userId, name: user.name, message: text }
         channel.send(JSON.stringify(payload))
         messages.value.push(payload)
     }

@@ -3,7 +3,7 @@
     <div class="p-6 max-w-xl mx-auto space-y-4">
       <h1 class="text-2xl font-bold">聊天室</h1>
 
-      <input v-model="name" placeholder="用户名" class="border p-2 w-full rounded" />
+      <input v-model="user.name" placeholder="用户名" class="border p-2 w-full rounded" />
 
       <div class="flex gap-2">
         <input v-model="newRoom" placeholder="房间名" class="border p-2 flex-1 rounded" />
@@ -24,14 +24,17 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from "vue";
-import { useRouter, useState } from "#imports";
+import { useRouter } from "#imports";
 import { useWsClient } from "~/composables/useWsClient";
+import { useUserStore } from "#imports";
+import { v4 as uuidV4 } from "uuid";
+
+const userStore = useUserStore();
 const { rooms, createRoom } = useRoomList();
 
 const router = useRouter();
-const userName = useState("userName", () => "");
+const { user } = storeToRefs(userStore);
 
-const name = ref("");
 const newRoom = ref("");
 
 const { send, onMessage } = useWsClient();
@@ -47,12 +50,12 @@ onMounted(() => {
 });
 
 const handleCreate = () => {
-  createRoom(newRoom.value, name.value);
+  user.value.userId = user.value.userId !== "" ? user.value.userId : uuidV4();
+  createRoom(newRoom.value, user.value);
 };
 
 function join(room: string) {
-  if (!name.value) return;
-  userName.value = name.value;
+  if (!user.value.name) return;
   router.push(`/room/${room}`);
 }
 </script>
