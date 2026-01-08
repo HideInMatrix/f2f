@@ -18,10 +18,10 @@ export function useRoomList() {
         send({ type: 'list' })
     })
 
-    function createRoom(room: string, owner: User) {
+    function createRoom(roomInfo: { roomId: string, roomName: string }, owner: User) {
         send({
             type: 'create-room',
-            room,
+            roomInfo,
             owner
         })
     }

@@ -2,7 +2,7 @@
   <div class="h-screen flex flex-col p-6 max-w-2xl mx-auto">
     <!-- 头部 -->
     <div class="mb-4">
-      <h2 class="text-xl font-bold">房间：{{ roomId }}</h2>
+      <h2 class="text-xl font-bold">房间：{{ roomInfo?.roomInfo.roomName }}</h2>
       <p class="text-sm text-gray-500">
         我的身份：
         <span :class="isOwner ? 'text-blue-600 font-semibold' : ''">
@@ -15,7 +15,10 @@
     <div ref="msgBox" class="flex-1 border rounded p-3 overflow-y-auto space-y-1 bg-gray-50">
       <div v-for="(m, i) in messages" :key="i" class="text-sm">
         <span class="font-medium">{{ m.name }}：</span>
-        <span>{{ m.message }}</span>
+        <span v-if="m.message.text">{{ m.message.text }}</span>
+        <img v-if="m.message.imgUrl" :src="m.message.imgUrl" alt="" />
+        <audio v-if="m.message.audioUrl" :src="m.message.audioUrl" controls></audio>
+        <video v-if="m.message.videoUrl" :src="m.message.videoUrl"></video>
       </div>
     </div>
 
@@ -54,11 +57,9 @@ const input = ref("");
 
 const { rooms } = useRoomList();
 
-const roomInfo = computed(() => rooms.value.find((r) => r.room === roomId));
+const roomInfo = computed(() => rooms.value.find((r) => r.roomInfo.roomId === roomId));
 
 const isOwner = computed(() => {
-  console.log("房间信息", roomInfo.value);
-
   return roomInfo.value?.owner.userId === user.value.userId;
 });
 
@@ -75,7 +76,8 @@ onMessage(async (data) => {
   console.log("信令", data);
 
   if (data.type === "rooms" && isOwner.value) {
-    const newRoomInfo = data.rooms.find((r: any) => r.room === roomId);
+    const newRoomInfo = data.rooms.find((r: any) => r.roomInfo.roomId === roomId);
+
     if (newRoomInfo.users && newRoomInfo.users.length > 1) {
       start();
     }
@@ -86,7 +88,7 @@ onMessage(async (data) => {
    WebRTC Chat
 ======================== */
 
-const { messages, start, sendMessage, connectionState } = useChat(roomId, user.value);
+const { messages, start, restartIceForNewPeer, sendMessage, connectionState } = useChat(roomId, user.value);
 
 /* ========================
    生命周期
@@ -94,11 +96,10 @@ const { messages, start, sendMessage, connectionState } = useChat(roomId, user.v
 
 onMounted(() => {
   // 通知服务器加入房间（信令）
-  console.log("我加入了房间");
 
   send({
     type: "join-room",
-    room: roomId,
+    roomId: roomId,
     user: user.value,
   });
 });
@@ -107,7 +108,7 @@ onMounted(() => {
 onBeforeRouteLeave((leaveGuard) => {
   send({
     type: "leave-room",
-    room: roomId,
+    roomId: roomId,
     user: user.value,
   });
 });
@@ -120,7 +121,7 @@ const canSend = computed(() => connectionState.value === "connected" && input.va
 
 function sendMsg() {
   if (!canSend.value) return;
-  sendMessage(input.value.trim());
+  sendMessage(roomId, input.value.trim());
   input.value = "";
 }
 

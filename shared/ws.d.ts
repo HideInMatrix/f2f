@@ -1,18 +1,23 @@
 
-type ClientRoomInfo = { room: string; count: number; owner: User; users?: User[] }
+type ClientBaseRoomInfo = {
+    roomId: string;
+    roomName: string
+}
+
+type ClientRoomInfo = { roomInfo: ClientBaseRoomInfo, count: number; owner: User; users?: User[] }
 
 interface PeerContext {
-    room?: string
+    roomInfo?: ClientBaseRoomInfo
     user?: User
 }
 type User = { name: string, userId: string }
 type WSMessageType = "rooms" | 'signal' | 'system' | 'list' | 'create-room' | 'join-room'
 type ClientMessage =
     | { type: 'list' }
-    | { type: 'create-room'; room: string; owner: User }
-    | { type: 'join-room'; room: string; user: User }
-    | { type: 'signal'; room: string; data: any }
-    | { type: 'leave-room'; room: string; data: any }
+    | { type: 'create-room'; owner: User, roomInfo: ClientBaseRoomInfo }
+    | { type: 'join-room'; roomId: string; user: User }
+    | { type: 'signal'; roomId: string; data: any }
+    | { type: 'leave-room'; roomId: string; data: any }
 
 type ServerMessage =
     | {

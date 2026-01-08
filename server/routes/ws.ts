@@ -1,10 +1,11 @@
 const peers = new Set<any>()
 
 const rooms = new Map<
-    string,
+    String,
     {
         owner: User
         peers: Set<any>
+        roomInfo: ClientBaseRoomInfo
     }
 >()
 
@@ -16,17 +17,18 @@ function sendRoomsToPeer(peer: any, type: WSMessageType = "rooms") {
 
     const payload: ServerMessage = {
         type: type,
-        rooms: Array.from(rooms.entries()).map(([roomName, room]) => {
+        rooms: Array.from(rooms.entries()).map(([roomId, room]) => {
+
             const base: ClientRoomInfo = {
-                room: roomName,
+                roomInfo: room.roomInfo,
                 owner: room.owner,
                 count: room.peers.size
             }
 
             // 只有加入了该房间，才能看到用户列表
-            if (ctx.room === roomName) {
+            if (ctx.roomInfo?.roomId === roomId) {
                 base.users = Array.from(room.peers).map((p: any) => ({
-                    userId: 'unknown',
+                    userId: (p.context as PeerContext)?.user?.userId === room.owner.userId ? room.owner.userId : 'unknown',
                     name: (p.context as PeerContext)?.user?.name || 'unknown'
                 }))
             }
@@ -41,9 +43,9 @@ function sendRoomsToPeer(peer: any, type: WSMessageType = "rooms") {
 /**
  * 向所有 peer 广播（每人一份裁剪数据）
  */
-function broadcastRooms() {
+function broadcastRooms(type?: WSMessageType) {
     for (const peer of peers) {
-        sendRoomsToPeer(peer)
+        sendRoomsToPeer(peer, type)
     }
 }
 
@@ -66,7 +68,7 @@ export default defineWebSocketHandler({
 
         /* ===== 创建房间 ===== */
         if (data.type === 'create-room') {
-            if (rooms.has(data.room)) {
+            if (rooms.has(data.roomInfo.roomId)) {
                 peer.send(
                     JSON.stringify({
                         type: 'system',
@@ -76,9 +78,10 @@ export default defineWebSocketHandler({
                 return
             }
 
-            rooms.set(data.room, {
+            rooms.set(data.roomInfo.roomId, {
                 owner: data.owner,
-                peers: new Set()
+                peers: new Set(),
+                roomInfo: data.roomInfo
             })
 
             broadcastRooms()
@@ -87,16 +90,16 @@ export default defineWebSocketHandler({
 
         /* ===== 加入房间 ===== */
         if (data.type === 'join-room') {
-            const room = rooms.get(data.room)
+            const room = rooms.get(data.roomId)
             if (!room) return
 
             // 如果之前在其他房间，先移除
-            if (ctx.room) {
-                const oldRoom = rooms.get(ctx.room)
+            if (ctx.roomInfo) {
+                const oldRoom = rooms.get(ctx.roomInfo.roomId)
                 oldRoom?.peers.delete(peer)
             }
 
-            ctx.room = data.room
+            ctx.roomInfo = room.roomInfo
             ctx.user = data.user
             room.peers.add(peer)
 
@@ -106,10 +109,9 @@ export default defineWebSocketHandler({
 
         /* ====== 离开房间 ========*/
         if (data.type === "leave-room") {
-            if (!ctx.room) return
+            if (!ctx.roomInfo) return
 
-            const roomName = ctx.room
-            const room = rooms.get(roomName)
+            const room = rooms.get(ctx.roomInfo.roomId)
 
             room?.peers.delete(peer)
             // ctx.room = undefined
@@ -124,7 +126,7 @@ export default defineWebSocketHandler({
 
         /* ===== WebRTC 信令 ===== */
         if (data.type === 'signal') {
-            const room = rooms.get(data.room)
+            const room = rooms.get(data.roomId)
             if (!room) return
 
             for (const p of room.peers) {
@@ -145,13 +147,13 @@ export default defineWebSocketHandler({
 
         const ctx = peer.context as PeerContext
 
-        if (ctx.room) {
-            const room = rooms.get(ctx.room)
+        if (ctx.roomInfo?.roomId) {
+            const room = rooms.get(ctx.roomInfo.roomId)
             room?.peers.delete(peer)
 
             // 如果房间空了，可以选择删除（可选）
             if (room && room.peers.size === 0) {
-                rooms.delete(ctx.room)
+                rooms.delete(ctx.roomInfo.roomId)
             }
         }
 

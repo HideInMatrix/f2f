@@ -1,12 +1,15 @@
 import { ref, shallowRef } from 'vue'
 import { useWsClient } from './useWsClient'
+import { useUserMessageStore } from '#imports'
 
-export function useChat(room: string, user: User) {
+export function useChat(roomId: string, user: User) {
     /* ========================
        状态
     ======================== */
 
-    const messages = ref<{ userId: String; name: string; message: string }[]>([])
+    const userMessageStore = useUserMessageStore()
+
+    const messages = computed(() => userMessageStore.getRoomMessages(roomId))
 
     const localStream = shallowRef<MediaStream | null>(null)
     const remoteStream = shallowRef<MediaStream | null>(null)
@@ -66,7 +69,7 @@ export function useChat(room: string, user: User) {
         }
 
         channel.onmessage = (e) => {
-            messages.value.push(JSON.parse(e.data))
+            userMessageStore.setMessageToStorage(roomId, JSON.parse(e.data))
         }
     }
 
@@ -83,7 +86,7 @@ export function useChat(room: string, user: User) {
         if (e.candidate) {
             sendSignal({
                 type: 'signal',
-                room,
+                roomId,
                 data: { ice: e.candidate }
             })
         }
@@ -122,7 +125,7 @@ export function useChat(room: string, user: User) {
     }
 
     /* ========================
-       信令处理
+       信令处理 用户相互交换的ICE信息链接
     ======================== */
 
     onMessage(async (msg) => {
@@ -142,7 +145,7 @@ export function useChat(room: string, user: User) {
 
             sendSignal({
                 type: 'signal',
-                room,
+                roomId,
                 data: { answer }
             })
         }
@@ -176,21 +179,45 @@ export function useChat(room: string, user: User) {
 
         sendSignal({
             type: 'signal',
-            room,
+            roomId,
             data: { offer }
         })
     }
+
+    /**
+ * 房主在检测到有新成员加入房间时调用
+ * 作用：重新发起一次 offer，让新加入的成员能够完成 ICE 交换
+ */
+    async function restartIceForNewPeer() {
+        if (pc.signalingState !== 'stable') {
+            console.warn('[WebRTC] signalingState not stable, skip restart')
+            return
+        }
+
+        connectionState.value = 'connecting'
+
+        const offer = await pc.createOffer({ iceRestart: true })
+        await pc.setLocalDescription(offer)
+
+        sendSignal({
+            type: 'signal',
+            roomId,
+            data: { offer }
+        })
+
+        console.log('[WebRTC] ICE restart offer sent for new peer')
+    }
+
 
     /* ========================
        发送消息
     ======================== */
 
-    function sendMessage(text: string) {
-        if (!channel || channel.readyState !== 'open') return
-
-        const payload = { userId: user.userId, name: user.name, message: text }
+    function sendMessage(roomId: string, text: string) {
+        if (!channel || channel.readyState !== 'open') { return }
+        const payload = { userId: user.userId, name: user.name, message: { text } }
         channel.send(JSON.stringify(payload))
-        messages.value.push(payload)
+        userMessageStore.setMessageToStorage(roomId, payload)
     }
 
     return {
@@ -204,6 +231,7 @@ export function useChat(room: string, user: User) {
 
         /* 连接 */
         start,
+        restartIceForNewPeer,
         isChannelOpen,
         connectionState
     }

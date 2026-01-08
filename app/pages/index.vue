@@ -3,19 +3,22 @@
     <div class="p-6 max-w-xl mx-auto space-y-4">
       <h1 class="text-2xl font-bold">聊天室</h1>
 
-      <input v-model="user.name" placeholder="用户名" class="border p-2 w-full rounded" />
+      <div class="flex gap-2">
+        <input v-model="user.name" placeholder="用户名" class="border p-2 flex-1 rounded" />
+        <button class="bg-blue-500 text-white px-4 rounded" @click="handleCreateUser">创建用户</button>
+      </div>
 
       <div class="flex gap-2">
         <input v-model="newRoom" placeholder="房间名" class="border p-2 flex-1 rounded" />
-        <button class="bg-blue-500 text-white px-4 rounded" @click="handleCreate">创建</button>
+        <button class="bg-blue-500 text-white px-4 rounded" @click="handleCreateRoom">创建房间</button>
       </div>
 
       <h2 class="font-semibold">已有房间</h2>
 
       <ul class="space-y-2">
-        <li v-for="r in rooms" :key="r.room" class="flex justify-between items-center border p-2 rounded">
-          <span>{{ r.room }}（{{ r.count }} 人）</span>
-          <button class="text-sm bg-green-500 text-white px-3 py-1 rounded" @click="join(r.room)">加入</button>
+        <li v-for="r in rooms" :key="r.roomInfo.roomId" class="flex justify-between items-center border p-2 rounded">
+          <span>{{ r.roomInfo.roomName }}（{{ r.count }} 人）</span>
+          <button class="text-sm bg-green-500 text-white px-3 py-1 rounded" @click="join(r.roomInfo)">加入</button>
         </li>
       </ul>
     </div>
@@ -49,13 +52,29 @@ onMounted(() => {
   send({ type: "list" });
 });
 
-const handleCreate = () => {
+const handleCreateUser = () => {
+  if (user.value.name === "") {
+    alert("请输入用户名");
+    return;
+  }
   user.value.userId = user.value.userId !== "" ? user.value.userId : uuidV4();
-  createRoom(newRoom.value, user.value);
 };
 
-function join(room: string) {
+const handleCreateRoom = () => {
+  if (newRoom.value === "") {
+    alert("请输入房间名称");
+    return;
+  }
+  if (user.value.userId === "") {
+    alert("请先创建用户");
+    return;
+  }
+  const roomId = uuidV4();
+  createRoom({ roomId, roomName: newRoom.value }, user.value);
+};
+
+function join(roomInfo: ClientBaseRoomInfo) {
   if (!user.value.name) return;
-  router.push(`/room/${room}`);
+  router.push(`/room/${roomInfo.roomId}`);
 }
 </script>
