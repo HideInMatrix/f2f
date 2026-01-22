@@ -1,12 +1,12 @@
 <template>
-  <div ref="container" class="splitter" :style="containerStyle">
-    <div class="pane left" :style="leftStyle">
+  <div ref="container" class="w-full flex h-full" :style="containerStyle">
+    <div class="overflow-auto" :style="leftStyle">
       <slot name="left" />
     </div>
 
-    <div class="resizer" @mousedown.prevent="startDrag" />
+    <div class="w-2 cursor-col-resize bg-gray-300 mx-2 rounded-2" @mousedown.prevent="startDrag" />
 
-    <div class="pane right">
+    <div class="overflow-auto flex-auto">
       <slot name="right" />
     </div>
   </div>
@@ -54,25 +54,3 @@ onBeforeUnmount(() => {
 });
 </script>
 
-<style scoped>
-.splitter {
-  width: 100%;
-  display: flex;
-  height: 100%;
-}
-.pane {
-  overflow: auto;
-}
-.resizer {
-  width: 6px;
-  cursor: col-resize;
-  background: rgba(0, 0, 0, 0.06);
-  margin: 0 4px;
-  border-radius: 3px;
-}
-.left {
-}
-.right {
-  flex: 1 1 auto;
-}
-</style>
