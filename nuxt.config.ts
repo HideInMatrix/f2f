@@ -2,7 +2,7 @@
 export default defineNuxtConfig({
   compatibilityDate: '2025-07-15',
   devtools: { enabled: true },
-  modules: ['@unocss/nuxt', '@pinia/nuxt'],
+  modules: ['@unocss/nuxt', '@pinia/nuxt', '@element-plus/nuxt'],
   runtimeConfig: {
     public: {
       turnUrl: process.env.NUXT_TURN_URL,

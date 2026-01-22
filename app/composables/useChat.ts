@@ -15,9 +15,7 @@ export function useChat(roomId: string, user: User) {
     const remoteStream = shallowRef<MediaStream | null>(null)
 
     const isChannelOpen = ref(false)
-    const connectionState = ref<
-        'idle' | 'connecting' | 'connected' | 'failed' | 'checking'
-    >('idle')
+    const connectionState = ref<WebRTCStatus>('idle')
 
     /* ========================
        WebSocket 信令
@@ -33,6 +31,7 @@ export function useChat(roomId: string, user: User) {
     const pc = new RTCPeerConnection({
         iceServers: [
             { urls: 'stun:stun.l.google.com:19302' },
+            { urls: 'stun:stun1.l.google.com:19302' },
             {
                 urls: config.public.turnUrl,
                 username: config.public.turnUser,
@@ -84,6 +83,7 @@ export function useChat(roomId: string, user: User) {
 
     pc.onicecandidate = (e) => {
         if (e.candidate) {
+            console.log('[ICE candidate]', e.candidate.candidate)
             sendSignal({
                 type: 'signal',
                 roomId,

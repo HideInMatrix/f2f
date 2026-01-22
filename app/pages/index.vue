@@ -1,6 +1,7 @@
 <template>
   <NuxtLayout>
     <div class="p-6 max-w-xl mx-auto space-y-4">
+      <div class="flex items-center justify-center">版本: 0.0.2</div>
       <h1 class="text-2xl font-bold">聊天室</h1>
 
       <div class="flex gap-2">

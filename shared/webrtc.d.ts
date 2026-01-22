@@ -1,0 +1,1 @@
+type WebRTCStatus = 'idle' | 'connecting' | 'connected' | 'failed' | 'checking'
